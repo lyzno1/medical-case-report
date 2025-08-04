@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { CozeClient } from "@/lib/coze-client"
 import { config, validateConfig } from "@/lib/config"
-import { debugCozeConfig, validateFileTypes, formatFileSize } from "@/lib/debug-utils"
+import { debugCozeConfig } from "@/lib/debug-utils"
 
 export async function POST(request: NextRequest) {
   try {
@@ -9,57 +9,29 @@ export async function POST(request: NextRequest) {
     validateConfig()
     debugCozeConfig()
 
-    const formData = await request.formData()
-    const mp3File = formData.get("mp3") as File | null
+    const { fileId, fileName } = await request.json()
 
-    if (!mp3File) {
-      return NextResponse.json({ error: "请上传音频文件" }, { status: 400 })
+    if (!fileId) {
+      return NextResponse.json({ error: "请提供文件ID" }, { status: 400 })
     }
 
-    // 验证文件类型和大小
-    if (mp3File) {
-      if (!validateFileTypes(mp3File, ["mp3", "wav", "m4a"])) {
-        return NextResponse.json({ error: "音频文件格式不正确，请上传 .mp3、.wav 或 .m4a 文件" }, { status: 400 })
-      }
-      if (mp3File.size > 50 * 1024 * 1024) {
-        return NextResponse.json({ error: "音频文件大小不能超过 50MB" }, { status: 400 })
-      }
-    }
-
-    console.log("开始处理文件:", {
-      mp3: `${mp3File.name} (${formatFileSize(mp3File.size)})`,
+    console.log("开始运行工作流:", {
+      fileId,
+      fileName: fileName || "未知文件",
     })
 
-    // 初始化 Coze 客户端，使用正确的参数
+    // 初始化 Coze 客户端
     const cozeClient = new CozeClient(config.coze.apiKey, config.coze.botId, config.coze.spaceId)
 
-    let mp3FileId: string | null = null
-
-    // 上传 MP3 文件
-    try {
-      console.log(`开始上传 MP3 文件: ${mp3File.name}`)
-      mp3FileId = await cozeClient.withRetry(() => cozeClient.uploadFile(mp3File))
-      console.log(`MP3 文件上传成功, File ID: ${mp3FileId}`)
-    } catch (error) {
-      console.error("MP3 文件上传失败:", error)
-      return NextResponse.json(
-        {
-          error: `MP3 文件上传失败: ${error instanceof Error ? error.message : "未知错误"}`,
-          details: "请检查文件格式是否正确，或稍后重试",
-        },
-        { status: 500 },
-      )
-    }
-
-    // 构建工作流参数 - 使用正确的Coze工作流变量名
-    const workflowParameters: Record<string, any> = {
-      [config.workflowParams.audioParam]: JSON.stringify({ file_id: mp3FileId }) // Audio类型 - 音频文件
+    // 构建工作流参数
+    const workflowParameters = {
+      [config.workflowParams.audioParam]: JSON.stringify({ file_id: fileId }) // Audio类型 - 音频文件
     }
 
     console.log("工作流参数:", {
       parameterCount: Object.keys(workflowParameters).length,
       parameters: workflowParameters,
-      hasMp3: !!mp3FileId,
+      fileId,
     })
 
     // 运行工作流生成报告
@@ -108,12 +80,9 @@ export async function POST(request: NextRequest) {
       metadata: {
         reportId,
         generatedAt: new Date().toISOString(),
-        filesProcessed: {
-          mp3: {
-            name: mp3File.name,
-            size: formatFileSize(mp3File.size),
-            fileId: mp3FileId,
-          },
+        fileProcessed: {
+          fileId,
+          fileName: fileName || "未知文件",
         },
         cozeInfo: {
           botId: config.coze.botId,
@@ -124,11 +93,11 @@ export async function POST(request: NextRequest) {
       },
     })
   } catch (error) {
-    console.error("生成报告时发生错误:", error)
+    console.error("运行工作流时发生错误:", error)
 
     return NextResponse.json(
       {
-        error: "生成报告时发生内部错误",
+        error: "运行工作流时发生内部错误",
         details: error instanceof Error ? error.message : "未知错误",
         timestamp: new Date().toISOString(),
         suggestion: "请稍后重试，如果问题持续存在，请联系技术支持",

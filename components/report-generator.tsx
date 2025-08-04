@@ -11,31 +11,33 @@ type ReportData = {
 
 export function ReportGenerator() {
   const [reportData, setReportData] = useState<ReportData | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
+  const [isUploading, setIsUploading] = useState(false)
+  const [isGenerating, setIsGenerating] = useState(false)
 
-  const handleGenerateReport = async (docxFile: File | null, mp3File: File | null) => {
-    setIsLoading(true)
+  const handleGenerateReport = async (fileId: string, fileName: string) => {
+    setIsGenerating(true)
 
     try {
-      // 处理文件上传和报告生成
-      const formData = new FormData()
-      if (docxFile) formData.append("docx", docxFile)
-      if (mp3File) formData.append("mp3", mp3File)
-
-      const response = await fetch("/api/generate-report", {
+      const response = await fetch("/api/run-workflow", {
         method: "POST",
-        body: formData,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ fileId, fileName }),
       })
 
-      if (!response.ok) throw new Error("生成报告失败")
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || "生成报告失败")
+      }
 
       const data = await response.json()
       setReportData(data)
     } catch (error) {
       console.error("Error generating report:", error)
-      alert("生成报告时出现错误，请稍后再试")
+      alert(`生成报告时出现错误: ${error instanceof Error ? error.message : "未知错误"}`)
     } finally {
-      setIsLoading(false)
+      setIsGenerating(false)
     }
   }
 
@@ -47,5 +49,5 @@ export function ReportGenerator() {
     return <ReportDisplay reportData={reportData} onRestart={handleRestart} />
   }
 
-  return <UploadInterface onGenerateReport={handleGenerateReport} isLoading={isLoading} />
+  return <UploadInterface onGenerateReport={handleGenerateReport} isUploading={isUploading} isGenerating={isGenerating} />
 }

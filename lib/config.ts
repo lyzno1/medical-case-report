@@ -22,6 +22,5 @@ export const config = {
   // Coze 工作流变量配置
   workflowParams: {
     audioParam: "BLaudio", // Audio类型 - 音频文件变量名
-    docParam: "BLtemplate", // Doc类型 - 文档文件变量名
   },
 }
