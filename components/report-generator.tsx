@@ -49,5 +49,5 @@ export function ReportGenerator() {
     return <ReportDisplay reportData={reportData} onRestart={handleRestart} />
   }
 
-  return <UploadInterface onGenerateReport={handleGenerateReport} isUploading={isUploading} isGenerating={isGenerating} />
+  return <UploadInterface onGenerateReport={handleGenerateReport} isGenerating={isGenerating} />
 }
