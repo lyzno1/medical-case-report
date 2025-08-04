@@ -56,24 +56,35 @@ export function ReportDisplay({ reportData, onRestart }: ReportDisplayProps) {
                 <p className="text-sm text-gray-500">基于音频分析生成</p>
               </div>
             </div>
-            <Button
-              onClick={handleCopyToClipboard}
-              variant="ghost"
-              size="sm"
-              className="text-gray-600 hover:text-gray-800"
-            >
-              {copied ? (
-                <>
-                  <CheckCircle className="w-4 h-4 mr-2 text-green-600" />
-                  已复制
-                </>
-              ) : (
-                <>
-                  <Copy className="w-4 h-4 mr-2" />
-                  复制全文
-                </>
-              )}
-            </Button>
+            <div className="flex items-center space-x-2">
+              <Button
+                onClick={handleDownload}
+                variant="ghost"
+                size="sm"
+                className="text-gray-600 hover:text-gray-800"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                下载报告
+              </Button>
+              <Button
+                onClick={handleCopyToClipboard}
+                variant="ghost"
+                size="sm"
+                className="text-gray-600 hover:text-gray-800"
+              >
+                {copied ? (
+                  <>
+                    <CheckCircle className="w-4 h-4 mr-2 text-green-600" />
+                    已复制
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-4 h-4 mr-2" />
+                    复制全文
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
         </div>
 
